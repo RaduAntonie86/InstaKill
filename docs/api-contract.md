@@ -3,7 +3,9 @@
 ## `GET /search`
 
 Search the seeded posts by semantic similarity using the pretrained
-`sentence-transformers/all-MiniLM-L6-v2` encoder, running locally on CPU.
+`all-MiniLM-L6-v2` encoder, running locally on CPU. Corpus and query embeddings
+are normalized by the encoder adapter; cosine scoring remains implemented in
+NumPy in the application domain.
 
 ### Query parameters
 

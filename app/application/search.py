@@ -1,6 +1,6 @@
 """Application service that coordinates repository, encoder, and retrieval."""
 
-from app.domain.retrieval import top_k_by_cosine
+from app.domain.retrieval import semantic_search
 
 
 class SearchIndex:
@@ -16,4 +16,4 @@ class SearchIndex:
 
     def search(self, query: str, limit: int) -> list[dict]:
         query_vector = self._encoder.encode([query])[0]
-        return top_k_by_cosine(query_vector, self._vectors, self._posts, limit)
+        return semantic_search(query_vector, self._posts, self._vectors, k=limit)
