@@ -9,7 +9,7 @@ user_id,strategy,ndcg_at_10,n_relevant,user_group
 78,learned,0.000000000000,14,regular
 88,chronological,0.000000000000,14,new
 88,popularity,0.085143117642,14,new
-88,for_you,0.085143117642,14,new
+88,for_you,0.094788364370,14,new
 88,learned,0.239920894802,14,new
 114,chronological,0.000000000000,2,casual
 114,popularity,0.000000000000,2,casual

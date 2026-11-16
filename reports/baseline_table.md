@@ -4,14 +4,14 @@
 |---|---|---:|---:|---|
 | overall | chronological | 0.0000 | [0.0000, 0.0000] | 7 |
 | overall | popularity | 0.0262 | [0.0000, 0.0560] | 7 |
-| overall | for_you | 0.0122 | [0.0000, 0.0365] | 7 |
+| overall | for_you | 0.0135 | [0.0000, 0.0406] | 7 |
 | overall | learned | 0.1067 | [0.0248, 0.2019] | 7 |
 | overall | learned − popularity | 0.0805 | [0.0108, 0.1758] | wins |
 | new | chronological | 0.0000 | [0.0000, 0.0000] | 2 |
 | new | popularity | 0.0426 | [0.0000, 0.0851] | 2 |
-| new | for_you | 0.0426 | [0.0000, 0.0851] | 2 |
+| new | for_you | 0.0474 | [0.0000, 0.0948] | 2 |
 | new | learned | 0.1200 | [0.0000, 0.2399] | 2 |
-| new | learned − popularity | 0.0774 | [0.0000, 0.1548] | unclear |
+| new | learned − for_you | 0.0726 | [0.0000, 0.1451] | unclear |
 | casual | chronological | 0.0000 | [0.0000, 0.0000] | 3 |
 | casual | popularity | 0.0326 | [0.0000, 0.0979] | 3 |
 | casual | for_you | 0.0000 | [0.0000, 0.0000] | 3 |

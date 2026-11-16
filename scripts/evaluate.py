@@ -178,7 +178,7 @@ def evaluate(db_path: Path, cutoff_text: str | None, seed: int, out: Path) -> No
                 relevant = after[user_id]
                 by_user[user_id] = {}
                 for strategy in STRATEGIES:
-                    ranked = rank_feed(user_id, posts, history, cutoff, 10, strategy, model if strategy == "learned" else None)
+                    ranked = rank_feed(user_id, posts, history, cutoff, 10, strategy, model if strategy in ("for_you", "learned") else None)
                     score = ndcg_at_10([r["post_id"] for r in ranked], relevant)
                     by_user[user_id][strategy] = score
                     count = len(before[user_id])

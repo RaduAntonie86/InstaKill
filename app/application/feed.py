@@ -3,7 +3,7 @@
 import numpy as np
 
 from app.domain.learned_feed import FEATURES, build_features, predict
-from app.domain.recommendations import build_signals, item_signals, recommend
+from app.domain.recommendations import DEFAULT_WEIGHTS, build_signals, item_signals, recommend
 
 
 def rank_feed(user_id: int, posts: list[dict], history: list[dict], now: float,
@@ -14,9 +14,20 @@ def rank_feed(user_id: int, posts: list[dict], history: list[dict], now: float,
     if limit < 1:
         raise ValueError("limit must be positive")
     prior_likes = {(like["user_id"], like["post_id"]) for like in history if like["created_at"] < now}
-    if strategy == "for_you":
+    if strategy == "weighted":
         return recommend(user_id, posts, history, now, limit, weights)
-    if strategy == "learned":
+    if strategy == "for_you":
+        if model is None:
+            raise ValueError("for_you strategy requires the shared signal model constants")
+        chosen_weights = DEFAULT_WEIGHTS if weights is None else weights
+        if (set(chosen_weights) != set(DEFAULT_WEIGHTS)
+                or any(value < 0 for value in chosen_weights.values())
+                or not any(chosen_weights.values())):
+            raise ValueError("weights must contain non-negative freshness, affinity, and popularity values, at least one positive")
+        features, liked = build_features(user_id, posts, history, now, model)
+        signals = features[:, :3]
+        scores = signals @ np.asarray([chosen_weights[name] for name in ("freshness", "affinity", "popularity")])
+    elif strategy == "learned":
         if model is None:
             raise ValueError("learned strategy requires a model")
         features, liked = build_features(user_id, posts, history, now, model)
@@ -42,5 +53,7 @@ def rank_feed(user_id: int, posts: list[dict], history: list[dict], now: float,
         item = {**posts[i], "score": float(scores[i])}
         if strategy == "learned":
             item["signals"] = {name: float(value) for name, value in zip(FEATURES, features[i])}
+        elif strategy == "for_you":
+            item["signals"] = {name: float(value) for name, value in zip(FEATURES[:3], features[i, :3])}
         result.append(item)
     return result

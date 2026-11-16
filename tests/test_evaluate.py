@@ -5,6 +5,8 @@ from pathlib import Path
 import numpy as np
 
 from scripts import evaluate
+from app.application.feed import rank_feed
+from app.domain.learned_feed import build_features, load_model
 
 
 def test_ndcg_hand_made_rankings():
@@ -12,6 +14,26 @@ def test_ndcg_hand_made_rankings():
     assert evaluate.ndcg_at_10([1, 2], {1, 2}) == 1
     expected = 1 / np.log2(5)
     assert np.isclose(evaluate.ndcg_at_10([8, 9, 7, 2], {2}), expected)
+
+
+def test_for_you_uses_shared_three_signal_features():
+    model = load_model(evaluate.ROOT / "like_model.npz")
+    now = evaluate.epoch("2020-01-10T00:00:00+00:00")
+    posts = [
+        {"post_id": 1, "user_id": 2, "content": "liked", "topic": "Comedy, Drama", "created_at": now - 10 * evaluate.DAY},
+        {"post_id": 2, "user_id": 2, "content": "one", "topic": "Comedy, Drama", "created_at": now - 2 * evaluate.DAY},
+        {"post_id": 3, "user_id": 2, "content": "two", "topic": "Action", "created_at": now - evaluate.DAY},
+    ]
+    history = [{"user_id": 1, "post_id": 1, "created_at": now - 5 * evaluate.DAY}]
+    features, liked = build_features(1, posts, history, now, model)
+    expected_scores = features[:, :3].sum(axis=1)
+    result = rank_feed(1, posts, history, now, 10, "for_you", model)
+    assert [item["post_id"] for item in result] == [2, 3]
+    assert all(not liked[[post["post_id"] for post in posts].index(item["post_id"])] for item in result)
+    for item in result:
+        index = item["post_id"] - 1
+        assert np.isclose(item["score"], expected_scores[index])
+        assert set(item["signals"]) == {"freshness", "affinity", "popularity"}
 
 
 def fixture_db(path: Path):
