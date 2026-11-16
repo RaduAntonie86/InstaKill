@@ -50,3 +50,49 @@ When post creation is added, its application service should refresh the index
 after a successful database write (or publish an index-refresh event). A later
 production version can replace the in-memory index with a rebuildable cache;
 this milestone intentionally indexes the small seeded corpus at startup.
+
+## `GET /feed`
+
+Builds a personalized ranking from existing SQLite posts and likes. The
+recommendation logic mirrors the Week 4 notebook: freshness decays with a
+three-year half-life, affinity is the share of the user's historical likes in
+the post's topic, and popularity is the post's share of all likes in the last
+365 days. The default score is the sum of those three signals. The top results
+are selected with a bounded heap and ties resolve by ascending post ID.
+
+Parameters: required `user_id` (positive integer), `limit` (1–50, default 10),
+and non-negative `freshness`, `affinity`, `popularity` weights (each default 1;
+at least one must be positive). Users' already-liked posts and future posts are
+excluded. The response contains the weights and ranked posts, each with its
+combined `score` and individual `signals`. Unknown users return 404. Run
+`python scripts/seed_db.py` to create the demo users, topical posts, and likes.
+
+Add `strategy=learned` to rank with the Week 5 NumPy model instead of the
+weighted Week 4 formula. The model is loaded from the project-root
+`like_model.npz` once at startup. Learned results include a predicted like
+probability in `score` and the six notebook signals in `signals`; if the model
+file is missing, this strategy returns 503. The learned scorer computes scores
+for all candidate posts in one NumPy batch. MovieLens posts use the archive's
+latest rating timestamp as their feature reference time, preserving the
+historical one-year popularity window and 25-year age cap; live posts use the
+current request time.
+
+## Social resources
+
+Users support `POST /users` (`{"username":"alice"}`), `GET /users`,
+`GET /users/{user_id}`, `PATCH /users/{user_id}` (`{"username":"new-name"}`),
+and `DELETE /users/{user_id}`. Posts support the same CRUD shape at `/posts`; a
+create body is `{"user_id":1,"content":"Hello"}` and a patch body is
+`{"content":"Edited"}`. Collection GETs return arrays, item GETs return one
+object, create returns 201, and delete returns 204. Missing items return 404;
+duplicate usernames and duplicate relationships return 409.
+
+`POST /follows` accepts `{"follower_id":1,"followed_id":2}` and returns the
+relationship including `created_at`. `DELETE /follows/{follower_id}/{followed_id}`
+removes it. `GET /users/{user_id}/following` and
+`GET /users/{user_id}/followers` return arrays of users with the relationship's
+`created_at`. Self-follows and duplicate follows return 409.
+
+`POST /likes` accepts `{"user_id":1,"post_id":1}` and returns the like,
+including `created_at`. `DELETE /likes/{user_id}/{post_id}` removes it. Duplicate
+likes return 409. User and post deletion also removes dependent follows and likes.

@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InstaKill — Find out what's happening</title>
+  <style>
+    :root { --blue:#0084b4; --nav:#252525; --line:#d6d6d6; --muted:#8899a6; --link:#0084b4; }
+    * { box-sizing:border-box }
+    body { margin:0; background:#c0deed; color:#333; font:13px/1.4 Arial,Helvetica,sans-serif; }
+    a,button { cursor:pointer }
+    a { color:var(--link); text-decoration:none }
+    a:hover { text-decoration:underline }
+    .topbar { height:42px; background:linear-gradient(#333,#222); border-bottom:1px solid #111; color:#eee; box-shadow:0 1px 3px #888; }
+    .topinner { max-width:1000px; height:42px; margin:auto; display:flex; align-items:center; gap:4px; }
+    .brand { width:130px; font-size:20px; font-weight:bold; letter-spacing:-1px; color:#fff; text-shadow:0 -1px #111; }
+    .brand span { color:#55acee }
+    .nav { height:42px; display:flex; align-items:stretch }
+    .nav button { background:none; color:#ccc; border:0; border-left:1px solid #383838; padding:0 16px; font-size:13px; text-shadow:0 -1px #111 }
+    .nav button:hover,.nav button.active { color:white; background:#111 }
+    .topsearch { display:flex; gap:4px; margin-left:auto; }
+    .topsearch input { width:195px; height:26px; padding:4px 8px; border:1px solid #111; border-radius:4px; box-shadow:inset 0 1px 2px #aaa; }
+    .topsearch button,.bluebutton { border:1px solid #1478a1; border-radius:4px; color:#fff; font-weight:bold; padding:6px 12px; background:linear-gradient(#55b8e1,#1686b2); text-shadow:0 -1px #26789a; box-shadow:0 1px 1px #aaa; }
+    .topsearch button:hover,.bluebutton:hover { background:linear-gradient(#70c8eb,#1686b2) }
+    .topuser { color:#ddd; margin-left:15px; font-size:12px; white-space:nowrap }
+    .layout { max-width:1000px; margin:18px auto 30px; display:grid; grid-template-columns:190px minmax(400px,590px) 190px; gap:14px; align-items:start }
+    .panel,.mainpanel { border:1px solid #c9c9c9; border-radius:5px; background:#fff; box-shadow:0 1px 2px #9ab8c4; overflow:hidden; margin-bottom:12px; }
+    .panelhead { padding:9px 11px; border-bottom:1px solid #ddd; background:linear-gradient(#fff,#f4f4f4); font-weight:bold; color:#444; }
+    .panelbody { padding:10px 11px; }
+    .profile { background:linear-gradient(#e8f5fb,#fff 72px); }
+    .avatar { width:48px;height:48px;border-radius:5px;float:left;margin-right:10px;background:linear-gradient(135deg,#3d8db3,#94d1e6);color:white;font-weight:bold;font-size:26px;text-align:center;line-height:48px;text-shadow:0 1px #36748a; }
+    .profile h3 { margin:1px 0 2px;font-size:15px }
+    .profile small { color:#777 }
+    .clear { clear:both }
+    label { display:block;font-size:11px;font-weight:bold;color:#777;margin:0 0 4px }
+    input,select,textarea { font:13px Arial,sans-serif;color:#333 }
+    .field { width:100%;padding:7px;border:1px solid #bbb;border-radius:3px;box-shadow:inset 0 1px 2px #eee;background:#fff }
+    .row { display:flex;gap:6px;align-items:center }
+    .row .field { min-width:0 }
+    .smallbtn { border:1px solid #bbb;border-radius:4px;background:linear-gradient(#fff,#e8e8e8);color:#444;padding:6px 9px;font-weight:bold;white-space:nowrap }
+    .smallbtn:hover { background:#eee }
+    .danger { color:#a33 }
+    .muted { color:#8899a6 }
+    .side-list { padding:0;margin:0;list-style:none }
+    .side-list li { padding:6px 0;border-bottom:1px solid #eee }
+    .side-list li:last-child { border:0 }
+    .trend { color:#0084b4;font-size:12px }
+    .compose { padding:12px;background:#eaf5fa;border-bottom:1px solid #d2e6ee }
+    .compose textarea { resize:vertical;min-height:58px }
+    .composefoot { display:flex;justify-content:space-between;align-items:center;margin-top:7px;color:#999;font-size:11px }
+    .pagehead { padding:11px 14px;border-bottom:1px solid #ddd;background:linear-gradient(#fff,#f5f5f5);display:flex;align-items:center;justify-content:space-between;gap:12px }
+    .pagehead h2 { margin:0;font-size:17px;color:#333 }
+    .controls { display:flex;align-items:center;gap:7px }
+    .controls select { max-width:145px;padding:5px;border:1px solid #bbb;border-radius:3px;background:white }
+    .feedmeta { padding:7px 13px;background:#f8f8f8;border-bottom:1px solid #eee;color:#777;font-size:11px }
+    .post { display:flex;padding:11px 12px;border-bottom:1px solid #e8e8e8;gap:10px;background:#fff }
+    .post:hover { background:#f9fcfd }
+    .post:last-child { border-bottom:0 }
+    .postavatar { flex:none;width:42px;height:42px;border-radius:4px;background:#dceaf0;display:flex;align-items:center;justify-content:center;color:#56879d;font-size:20px;font-weight:bold; }
+    .postbody { min-width:0;flex:1 }
+    .posttitle { font-weight:bold;color:#333 }
+    .posthandle { color:#999;font-size:12px;margin-left:4px }
+    .posttime { float:right;color:#aaa;font-size:11px }
+    .posttext { white-space:pre-wrap;overflow-wrap:anywhere;margin:3px 0 7px;font-size:13px; }
+    .postactions { display:flex;align-items:center;gap:15px;color:#999;font-size:11px }
+    .postactions button { border:0;background:none;color:#8899a6;padding:0;font-size:11px }
+    .postactions button:hover { color:#0084b4;text-decoration:underline }
+    .postactions .liked { color:#c44 }
+    .empty,.loading,.error { padding:25px 18px;text-align:center;color:#888 }
+    .error { color:#a33;text-align:left;background:#fff8f8;border-bottom:1px solid #eacaca }
+    .userrow { display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid #eee }
+    .userrow:last-child { border:0 }
+    .userbubble { width:34px;height:34px;border-radius:4px;background:#e5f1f5;color:#51859c;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:bold;flex:none }
+    .userdetails { flex:1;min-width:0 }
+    .userdetails strong { display:block;overflow:hidden;text-overflow:ellipsis }
+    .userdetails small { color:#999 }
+    .rightnote { font-size:11px;color:#777;line-height:1.5 }
+    .api { border-top:1px solid #eee;margin-top:9px;padding-top:8px;color:#999;font:11px Consolas,monospace }
+    .footer { color:#8aaab6;font-size:11px;padding:5px 3px;line-height:1.7 }
+    .footer a { color:#668d9b }
+    .hidden { display:none!important }
+    @media(max-width:850px) { .layout{grid-template-columns:175px minmax(0,1fr);margin:12px}.rightcol{display:none}.topinner{padding:0 12px} }
+    @media(max-width:600px) { .layout{display:block;margin:10px}.leftcol{display:none}.topinner{padding:0 9px}.brand{width:auto;margin-right:8px}.nav button{padding:0 9px}.topsearch input{width:105px}.topuser{display:none}.pagehead{align-items:flex-start;flex-direction:column}.controls{flex-wrap:wrap} }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topinner">
+      <a class="brand" href="#home" aria-label="InstaKill home">insta<span>kill</span></a>
+      <nav class="nav" aria-label="Main navigation">
+        <button class="active" data-page="home">⌂ Home</button>
+        <button data-page="people">＠ Connect</button>
+        <button data-page="discover">⌕ Discover</button>
+      </nav>
+      <form class="topsearch" id="searchForm"><input id="searchInput" placeholder="Search posts" aria-label="Search posts"><button>Search</button></form>
+      <div class="topuser">Signed in as <strong id="navUsername">—</strong></div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="leftcol">
+      <section class="panel profile"><div class="panelbody">
+        <div class="avatar" id="profileAvatar">?</div><h3 id="profileName">Welcome!</h3><small id="profileHandle">Choose a user to begin</small><div class="clear"></div>
+        <div style="margin-top:12px"><label for="userSelect">TEST AS USER</label><select class="field" id="userSelect"></select></div>
+      </div></section>
+      <section class="panel"><div class="panelhead">Create an account</div><div class="panelbody">
+        <form id="userForm"><label for="newUsername">USERNAME</label><div class="row"><input class="field" id="newUsername" maxlength="80" placeholder="your_name" required><button class="smallbtn" type="submit">Join</button></div></form>
+      </div></section>
+      <section class="panel"><div class="panelhead">Who to follow <a href="#people" style="float:right;font-weight:normal">View all →</a></div><div id="suggestions" class="panelbody muted">Loading people…</div></section>
+      <section class="panel"><div class="panelhead">Trending</div><div class="panelbody"><ul class="side-list trend" id="trends"><li>#MovieNight</li><li>#InstaKill</li><li>#NowPlaying</li><li>#WeekendPlans</li></ul></div></section>
+      <div class="footer">© 2012 InstaKill · About · Help · Terms<br>Privacy · Developers · Status</div>
+    </aside>
+
+    <section class="mainpanel">
+      <div id="composeBox" class="compose">
+        <form id="postForm"><textarea class="field" id="postContent" maxlength="500" placeholder="What’s happening? Share a thought or your favorite movie…" required></textarea>
+          <div class="composefoot"><span><span id="charCount">0</span>/500</span><button class="bluebutton" type="submit">Post</button></div>
+        </form>
+      </div>
+      <div class="pagehead"><h2 id="pageTitle">Your Home Timeline</h2><div class="controls" id="feedControls"><label for="strategy" style="margin:0">Ranking</label><select id="strategy" title="Feed ranking"><option value="weighted">Week 4 · Weighted</option><option value="learned">Week 5 · Learned</option></select><button class="smallbtn" id="refreshButton">Refresh</button></div></div>
+      <div class="feedmeta" id="feedMeta">Posts from your little corner of the internet.</div>
+      <div id="notice" class="hidden"></div>
+      <div id="content"><div class="loading">Loading timeline…</div></div>
+    </section>
+
+    <aside class="rightcol">
+      <section class="panel"><div class="panelhead">About InstaKill</div><div class="panelbody rightnote">A tiny social network for sharing posts, discovering people, and seeing what you might like next.<div class="api">API playground · connected<br>localhost:8000</div></div></section>
+      <section class="panel"><div class="panelhead">Your connections</div><div class="panelbody"><div style="font-size:20px;font-weight:bold;color:#444" id="connectionCount">—</div><small class="muted">people you follow</small><div style="margin-top:12px;font-size:20px;font-weight:bold;color:#444" id="postCount">—</div><small class="muted">posts to explore</small></div></section>
+      <section class="panel"><div class="panelhead">Quick links</div><div class="panelbody rightnote"><ul class="side-list"><li><a href="#home" data-link-page="home">Your timeline</a></li><li><a href="#discover" data-link-page="discover">Discover posts</a></li><li><a href="#people" data-link-page="people">Find people</a></li></ul></div></section>
+      <section class="panel"><div class="panelhead">API status</div><div class="panelbody rightnote"><span id="apiStatus">Checking…</span><div class="api">Try: create · edit · delete<br>like · follow · recommend</div></div></section>
+    </aside>
+  </main>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const state = { users: [], userId: null, following: new Set(), liked: new Set(), page: 'home', posts: [] };
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const initials = (value) => (String(value || '?').trim()[0] || '?').toUpperCase();
+    async function api(path, options = {}) {
+      const response = await fetch(path, { ...options, headers: { 'Content-Type':'application/json', ...(options.headers || {}) } });
+      const body = response.status === 204 ? null : await response.json().catch(() => null);
+      if (!response.ok) { const error = new Error(body?.detail || `Request failed (${response.status})`); error.status = response.status; throw error; }
+      return body;
+    }
+    function message(text, bad = false) {
+      const node = $('#notice'); node.textContent = text; node.className = bad ? 'error' : 'feedmeta';
+      window.clearTimeout(message.timer); message.timer = window.setTimeout(() => { node.className = 'hidden'; }, 4500);
+    }
+    function setPage(page) {
+      state.page = page;
+      document.querySelectorAll('.nav [data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+      $('#composeBox').classList.toggle('hidden', page === 'people');
+      $('#feedControls').classList.toggle('hidden', page !== 'home');
+      $('#pageTitle').textContent = ({home:'Your Home Timeline', people:'People you may know', discover:'Discover posts'})[page] || 'Your Home Timeline';
+      if (page === 'people') loadPeople(); else if (page === 'discover') loadPosts(); else loadFeed();
+    }
+    function postCard(post) {
+      const name = state.users.find(u => u.id === post.user_id)?.username || `user ${post.user_id}`;
+      const liked = state.liked.has(post.id);
+      const score = post.score == null ? '' : `<span title="Recommendation score">★ ${Number(post.score).toFixed(3)}</span>`;
+      const signals = post.signals ? `<details style="margin-top:5px;color:#999;font-size:11px"><summary>Six signals</summary>${Object.entries(post.signals).map(([k,v]) => `${escapeHtml(k)} ${Number(v).toFixed(3)}`).join(' · ')}</details>` : '';
+      return `<article class="post" data-post="${post.id}"><div class="postavatar">${escapeHtml(initials(name))}</div><div class="postbody"><div><span class="posttitle">${escapeHtml(name)}</span><span class="posthandle">@${escapeHtml(name)}</span><span class="posttime">${escapeHtml(post.created_at || '')}</span></div><div class="posttext">${escapeHtml(post.content)}</div><div class="postactions">${score}<button class="${liked?'liked':''}" data-action="like" data-id="${post.id}">${liked?'♥ Liked':'♡ Like'}</button><button data-action="edit" data-id="${post.id}">✎ Edit</button><button class="danger" data-action="delete-post" data-id="${post.id}">Delete</button></div>${signals}</div></article>`;
+    }
+    function renderPosts(posts, emptyText) {
+      state.posts = posts || [];
+      $('#content').innerHTML = state.posts.length ? state.posts.map(postCard).join('') : `<div class="empty">${escapeHtml(emptyText)}</div>`;
+      $('#postCount').textContent = state.posts.length;
+    }
+    async function loadUsers() {
+      state.users = await api('/users');
+      $('#userSelect').innerHTML = state.users.length ? state.users.map(u => `<option value="${u.id}">${escapeHtml(u.username)}</option>`).join('') : '<option value="">No users yet</option>';
+      if (state.userId && state.users.some(u => u.id === state.userId)) $('#userSelect').value = state.userId;
+      else state.userId = state.users[0]?.id ?? null;
+      updateProfile();
+    }
+    function updateProfile() {
+      const user = state.users.find(u => u.id === Number(state.userId));
+      $('#profileName').textContent = user?.username || 'Welcome!';
+      $('#profileHandle').textContent = user ? `@${user.username}` : 'Create an account to begin';
+      $('#profileAvatar').textContent = initials(user?.username);
+      $('#navUsername').textContent = user?.username || 'guest';
+    }
+    async function loadConnections() {
+      if (!state.userId) return;
+      const people = await api(`/users/${state.userId}/following`);
+      state.following = new Set(people.map(user => user.id));
+      $('#connectionCount').textContent = people.length;
+    }
+    async function loadFeed() {
+      if (!state.userId) { renderPosts([], 'Create an account on the left to get started.'); return; }
+      $('#content').innerHTML = '<div class="loading">Loading your timeline…</div>';
+      try {
+        const strategy = $('#strategy').value;
+        const data = await api(`/feed?user_id=${state.userId}&limit=30&strategy=${strategy}`);
+        renderPosts(data.results, data.results.length ? `Ranked with ${strategy === 'learned' ? 'the Week 5 learned model' : 'the Week 4 weighted formula'}.` : 'No posts to show yet.');
+        $('#feedMeta').textContent = strategy === 'learned' ? 'Your timeline, ranked by predicted like probability.' : 'Your timeline, ranked by freshness, affinity, and popularity.';
+      } catch (error) { $('#content').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
+    }
+    async function loadPosts() {
+      $('#content').innerHTML = '<div class="loading">Loading posts…</div>';
+      try { renderPosts(await api('/posts'), 'No posts yet. Be the first to post!'); $('#feedMeta').textContent = 'Every post, fresh from the database.'; }
+      catch (error) { $('#content').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
+    }
+    async function loadPeople() {
+      $('#content').innerHTML = '<div class="loading">Finding people…</div>';
+      try {
+        await loadConnections();
+        const others = state.users.filter(user => user.id !== Number(state.userId));
+        $('#content').innerHTML = others.length ? others.map(user => `<div class="userrow"><div class="userbubble">${escapeHtml(initials(user.username))}</div><div class="userdetails"><strong>${escapeHtml(user.username)}</strong><small>Joined ${escapeHtml(user.created_at || 'recently')}</small></div><button class="smallbtn" data-action="follow" data-id="${user.id}">${state.following.has(user.id)?'Following':'Follow'}</button></div>`).join('') : '<div class="empty">No other users yet. Invite someone to join!</div>';
+        $('#feedMeta').textContent = 'Connect with people in your community.';
+        $('#suggestions').innerHTML = others.slice(0,4).map(user => `<div style="padding:4px 0"><a href="#people">${escapeHtml(user.username)}</a></div>`).join('') || 'You’re the first one here!';
+      } catch (error) { $('#content').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
+    }
+    async function searchPosts(query) {
+      if (!query.trim()) { message('Type a search term first.', true); return; }
+      $('#pageTitle').textContent = 'Search results'; $('#feedControls').classList.add('hidden'); $('#content').innerHTML = '<div class="loading">Searching posts…</div>';
+      try {
+        const data = await api(`/search?q=${encodeURIComponent(query)}&limit=20`);
+        const results = data.results.map(result => ({ id:result.post_id, user_id:result.user_id, content:result.content, score:result.score }));
+        renderPosts(results, `No matches for “${query}”.`); $('#feedMeta').textContent = `Search results for “${query}” · semantic search`;
+      } catch (error) { $('#content').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
+    }
+
+    document.querySelectorAll('.nav [data-page]').forEach(button => button.addEventListener('click', () => setPage(button.dataset.page)));
+    document.querySelectorAll('[data-link-page]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); setPage(link.dataset.linkPage); }));
+    $('#userSelect').addEventListener('change', async event => { state.userId = Number(event.target.value) || null; state.liked.clear(); updateProfile(); await loadConnections().catch(()=>{}); setPage(state.page); });
+    $('#strategy').addEventListener('change', loadFeed);
+    $('#refreshButton').addEventListener('click', () => state.page === 'home' ? loadFeed() : setPage(state.page));
+    $('#searchForm').addEventListener('submit', event => { event.preventDefault(); searchPosts($('#searchInput').value); });
+    $('#newUsername').addEventListener('keydown', event => { if (event.key === 'Enter') event.preventDefault(); });
+    $('#userForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      try { const user = await api('/users', {method:'POST',body:JSON.stringify({username:$('#newUsername').value})}); $('#newUsername').value=''; await loadUsers(); state.userId=user.id; $('#userSelect').value=user.id; updateProfile(); message(`Welcome to InstaKill, ${user.username}!`); setPage('home'); }
+      catch(error) { message(error.message, true); }
+    });
+    $('#postContent').addEventListener('input', event => $('#charCount').textContent = event.target.value.length);
+    $('#postForm').addEventListener('submit', async event => {
+      event.preventDefault(); if (!state.userId) { message('Choose or create a user first.', true); return; }
+      try { await api('/posts', {method:'POST',body:JSON.stringify({user_id:Number(state.userId),content:$('#postContent').value})}); $('#postContent').value=''; $('#charCount').textContent='0'; message('Your post is live.'); state.page === 'discover' ? loadPosts() : loadFeed(); }
+      catch(error) { message(error.message, true); }
+    });
+    $('#content').addEventListener('click', async event => {
+      const button = event.target.closest('[data-action]'); if (!button) return;
+      const id = Number(button.dataset.id), action = button.dataset.action;
+      try {
+        if (action === 'like') {
+          if (!state.userId) throw new Error('Choose a user first.');
+          if (state.liked.has(id)) {
+            await api(`/likes/${state.userId}/${id}`, {method:'DELETE'}); state.liked.delete(id); message('Removed from your likes.');
+          } else {
+            let alreadyLiked = false;
+            try { await api('/likes', {method:'POST',body:JSON.stringify({user_id:Number(state.userId),post_id:id})}); }
+            catch (error) {
+              // The API intentionally has no likes-list endpoint; a 409 means this user already liked it.
+              if (error.status !== 409) throw error;
+              await api(`/likes/${state.userId}/${id}`, {method:'DELETE'});
+              alreadyLiked = true; message('Removed from your likes.');
+            }
+            if (!alreadyLiked) { state.liked.add(id); message('Added to your likes.'); }
+          }
+        } else if (action === 'follow') {
+          if (state.following.has(id)) { await api(`/follows/${state.userId}/${id}`,{method:'DELETE'}); state.following.delete(id); }
+          else { await api('/follows',{method:'POST',body:JSON.stringify({follower_id:Number(state.userId),followed_id:id})}); state.following.add(id); }
+          await loadConnections(); loadPeople(); return;
+        } else if (action === 'edit') {
+          const post = state.posts.find(row => row.id === id); const content = prompt('Edit this post:', post?.content || '');
+          if (content === null) return;
+          await api(`/posts/${id}`,{method:'PATCH',body:JSON.stringify({content})}); message('Post updated.');
+        } else if (action === 'delete-post') {
+          if (!confirm('Delete this post? Its likes will be removed too.')) return;
+          await api(`/posts/${id}`,{method:'DELETE'}); state.liked.delete(id); message('Post deleted.');
+        }
+        if (state.page === 'home') await loadFeed(); else if (state.page === 'discover') await loadPosts();
+      } catch(error) { message(error.message, true); }
+    });
+    async function start() {
+      try {
+        const health = await api('/health'); $('#apiStatus').textContent = health.status === 'ok' ? '● Connected to the API' : 'API response received'; $('#apiStatus').style.color='#39864b';
+        await loadUsers(); await loadConnections().catch(()=>{}); await loadPosts(); setPage('home');
+      } catch(error) { $('#apiStatus').textContent='API unavailable'; $('#apiStatus').style.color='#a33'; $('#content').innerHTML=`<div class="error">${escapeHtml(error.message)}. Start the API with <code>uvicorn app.main:app --reload</code>.</div>`; }
+    }
+    start();
+  </script>
+</body>
+</html>

@@ -30,13 +30,24 @@ the application after changing the seeded database to rebuild the index.
 
 ```bash
 pip install -e .
-uvicorn app.main:app --reload
-# other terminal:
-curl localhost:8000/health
-
 python scripts/seed_db.py
+uvicorn app.main:app --reload
+# open http://localhost:8000 for the 2012-style API playground, or use the API directly:
+curl localhost:8000/health
+curl "localhost:8000/feed?user_id=1"
+
 pytest
 ```
+
+## Personalized feed (Week 4)
+
+`GET /feed?user_id=1` ranks posts using freshness, topic affinity from the
+user's past likes, and recent post popularity. It excludes posts the user has
+already liked and posts created in the future. Defaults match the notebook
+weights `(1, 1, 1)`; tune them with `freshness`, `affinity`, and `popularity`
+query parameters, for example `/feed?user_id=1&freshness=2&affinity=2&popularity=3`.
+Results include each signal and the combined score. The sample database contains
+five users, topical posts, and likes; regenerate it with `python scripts/seed_db.py`.
 
 ## Milestones (see masterplan.md for full details)
 
