@@ -9,11 +9,10 @@ from app.db.database import init_db
 from app.application.search import SearchIndex
 from app.adapters.embeddings import SentenceTransformerEncoder
 from app.repositories.posts import SQLitePostRepository
-from app.domain.recommendations import recommend
+from app.application.feed import rank_feed
 from app.repositories.social import SQLiteSocialRepository
-from app.domain.learned_feed import FEATURES, build_features, load_model, predict
+from app.domain.learned_feed import load_model
 from pathlib import Path
-import numpy as np
 from fastapi.responses import FileResponse
 
 
@@ -217,7 +216,7 @@ def search(
 def feed(
     user_id: int = Query(..., ge=1),
     limit: int = Query(10, ge=1, le=50),
-    strategy: str = Query("weighted", pattern="^(weighted|learned)$"),
+    strategy: str = Query("weighted", pattern="^(weighted|for_you|chronological|learned)$"),
     freshness: float = Query(1.0, ge=0),
     affinity: float = Query(1.0, ge=0),
     popularity: float = Query(1.0, ge=0),
@@ -229,29 +228,17 @@ def feed(
     posts = repository.list_feed_posts()
     history = repository.list_likes()
     now = datetime.now(timezone.utc).timestamp()
+    if strategy == "chronological":
+        results = rank_feed(user_id, posts, history, now, limit, "chronological")
+        return {"user_id": user_id, "strategy": strategy, "results": results}
     if strategy == "learned":
         model = getattr(app.state, "like_model", None)
         if model is None:
             raise HTTPException(status_code=503, detail="learned feed model is unavailable")
-        features, liked_mask = build_features(user_id, posts, history, now, model)
-        scores = predict(model, features)
-        post_ids = np.asarray([post["post_id"] for post in posts], dtype=np.int64)
-        created = np.asarray([post["created_at"] for post in posts], dtype=np.float64)
-        eligible = (created < now) & ~liked_mask
-        candidate_indices = np.flatnonzero(eligible)
-        order = np.lexsort((post_ids[candidate_indices], -scores[candidate_indices]))[:limit]
-        selected = candidate_indices[order]
-        results = [
-            {
-                **posts[index],
-                "score": float(scores[index]),
-                "signals": {name: float(value) for name, value in zip(FEATURES, features[index])},
-            }
-            for index in selected
-        ]
+        results = rank_feed(user_id, posts, history, now, limit, "learned", model)
         return {"user_id": user_id, "strategy": strategy, "results": results}
     weights = {"freshness": freshness, "affinity": affinity, "popularity": popularity}
     if not any(weights.values()):
         raise HTTPException(status_code=422, detail="at least one ranking weight must be positive")
-    results = recommend(user_id, posts, history, now, limit, weights)
+    results = rank_feed(user_id, posts, history, now, limit, "for_you", weights=weights)
     return {"user_id": user_id, "strategy": strategy, "weights": weights, "results": results}

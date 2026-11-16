@@ -49,6 +49,17 @@ query parameters, for example `/feed?user_id=1&freshness=2&affinity=2&popularity
 Results include each signal and the combined score. The sample database contains
 five users, topical posts, and likes; regenerate it with `python scripts/seed_db.py`.
 
+## Offline feed evaluation (Week 7)
+
+Install the evaluation tools with `pip install -e ".[eval]"`, then run
+`python scripts/evaluate.py --db instakill.db --seed 42 --out reports/`. The
+script takes a temporary time-split snapshot, evaluates chronological,
+popularity, for_you, and learned feeds through the shared ranking service, and
+writes per-user results, an interval table, and a self-contained HTML dashboard.
+An explicit cutoff can be supplied with `--cutoff 2009-09-10T09:26:52+00:00`.
+See [docs/evaluation-protocol.md](docs/evaluation-protocol.md) for the protocol
+and known limitations.
+
 ## Milestones (see masterplan.md for full details)
 
 W1 Repo+API → W3 CRUD+DB → W4 Feed v0 → W7 Baseline+eval plan → W9 ML+pretrained feature → W11 Profile+optimize → W13 Feature freeze+E2E → W14 Red-team+Demo Day.

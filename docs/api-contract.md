@@ -77,6 +77,10 @@ latest rating timestamp as their feature reference time, preserving the
 historical one-year popularity window and 25-year age cap; live posts use the
 current request time.
 
+`strategy=for_you` is an alias for the weighted Week 4 formula. Use
+`strategy=chronological` to rank eligible posts newest first. Popularity is an
+offline evaluation baseline only and is not exposed by `GET /feed`.
+
 ## Social resources
 
 Users support `POST /users` (`{"username":"alice"}`), `GET /users`,

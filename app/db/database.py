@@ -1,6 +1,8 @@
 """SQLite bootstrap for InstaKill. Uses the stdlib sqlite3 module (see R11)."""
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
+from collections.abc import Iterator
 
 DB_PATH = Path(__file__).resolve().parent.parent.parent / "instakill.db"
 
@@ -34,11 +36,16 @@ CREATE TABLE IF NOT EXISTS follow (
 """
 
 
-def get_connection() -> sqlite3.Connection:
+@contextmanager
+def get_connection() -> Iterator[sqlite3.Connection]:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def init_db() -> None:
