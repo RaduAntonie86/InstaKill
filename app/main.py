@@ -249,5 +249,5 @@ def feed(
     weights = {"freshness": freshness, "affinity": affinity, "popularity": popularity}
     if not any(weights.values()):
         raise HTTPException(status_code=422, detail="at least one ranking weight must be positive")
-    results = rank_feed(user_id, posts, history, now, limit, "for_you", weights=weights)
+    results = rank_feed(user_id, posts, history, now, limit, "weighted", weights=weights)
     return {"user_id": user_id, "strategy": strategy, "weights": weights, "results": results}
