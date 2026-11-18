@@ -3,7 +3,7 @@
 import numpy as np
 
 from app.domain.learned_feed import FEATURES, build_features, predict
-from app.domain.recommendations import DEFAULT_WEIGHTS, build_signals, item_signals, recommend
+from app.domain.recommendations import DEFAULT_WEIGHTS, build_signals, item_signals
 
 
 def rank_feed(user_id: int, posts: list[dict], history: list[dict], now: float,
@@ -14,24 +14,19 @@ def rank_feed(user_id: int, posts: list[dict], history: list[dict], now: float,
     if limit < 1:
         raise ValueError("limit must be positive")
     prior_likes = {(like["user_id"], like["post_id"]) for like in history if like["created_at"] < now}
-    if strategy == "weighted":
-        return recommend(user_id, posts, history, now, limit, weights)
-    if strategy == "for_you":
+    if strategy in ("learned", "for_you"):
         if model is None:
-            raise ValueError("for_you strategy requires the shared signal model constants")
-        chosen_weights = DEFAULT_WEIGHTS if weights is None else weights
-        if (set(chosen_weights) != set(DEFAULT_WEIGHTS)
-                or any(value < 0 for value in chosen_weights.values())
-                or not any(chosen_weights.values())):
-            raise ValueError("weights must contain non-negative freshness, affinity, and popularity values, at least one positive")
+            raise ValueError(f"{strategy} strategy requires the shared signal model constants")
         features, liked = build_features(user_id, posts, history, now, model)
-        signals = features[:, :3]
-        scores = signals @ np.asarray([chosen_weights[name] for name in ("freshness", "affinity", "popularity")])
-    elif strategy == "learned":
-        if model is None:
-            raise ValueError("learned strategy requires a model")
-        features, liked = build_features(user_id, posts, history, now, model)
-        scores = predict(model, features)
+        if strategy == "learned":
+            chosen_weights = DEFAULT_WEIGHTS if weights is None else weights
+            if (set(chosen_weights) != set(DEFAULT_WEIGHTS)
+                    or any(value < 0 for value in chosen_weights.values())
+                    or not any(chosen_weights.values())):
+                raise ValueError("weights must contain non-negative freshness, affinity, and popularity values, at least one positive")
+            scores = features[:, :3] @ np.asarray([chosen_weights[name] for name in ("freshness", "affinity", "popularity")])
+        else:
+            scores = predict(model, features)
     elif strategy == "chronological":
         scores = np.asarray([post["created_at"] for post in posts], dtype=np.float64)
         features = None
@@ -51,9 +46,9 @@ def rank_feed(user_id: int, posts: list[dict], history: list[dict], now: float,
     result = []
     for i in candidates[order]:
         item = {**posts[i], "score": float(scores[i])}
-        if strategy == "learned":
+        if strategy == "for_you":
             item["signals"] = {name: float(value) for name, value in zip(FEATURES, features[i])}
-        elif strategy == "for_you":
+        elif strategy == "learned":
             item["signals"] = {name: float(value) for name, value in zip(FEATURES[:3], features[i, :3])}
         result.append(item)
     return result

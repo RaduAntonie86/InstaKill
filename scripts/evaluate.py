@@ -26,7 +26,9 @@ from app.db import database
 from app.domain.learned_feed import load_model
 from app.repositories.posts import SQLitePostRepository
 
-STRATEGIES = ("chronological", "popularity", "for_you", "learned")
+STRATEGIES = ("learned", "for_you", "popularity", "chronological")
+BASELINES = ("learned", "popularity", "chronological")
+NEURAL_STRATEGY = "for_you"
 STRATEGY_COLORS = {"chronological": "#4c78a8", "popularity": "#f58518", "for_you": "#54a24b", "learned": "#b279a2"}
 DAY = 86400.0
 
@@ -105,7 +107,7 @@ def _draw_dashboard(rows: list[dict], slices: list[str], summaries: dict, deltas
     err = [[vals[i] - deltas[g][1] for i, g in enumerate(labels)], [deltas[g][2] - vals[i] for i, g in enumerate(labels)]]
     colors = [plt.get_cmap("coolwarm")(0.5 + np.clip(v, -1, 1) * 0.45) for v in vals]
     ax.bar(labels, vals, color=colors); ax.errorbar(range(len(labels)), vals, yerr=err, fmt="none", ecolor="#222", capsize=4)
-    ax.axhline(0, color="#222", linewidth=1); ax.set(title="Where does learned change the best baseline?", ylabel="NDCG@10 difference", xlabel="User activity group")
+    ax.axhline(0, color="#222", linewidth=1); ax.set(title="Where does For you change the best baseline?", ylabel="NDCG@10 difference", xlabel="User activity group")
     fig.tight_layout(); figures.append(fig)
 
     fig, ax = plt.subplots(figsize=(8, 4.3))
@@ -206,13 +208,13 @@ def evaluate(db_path: Path, cutoff_text: str | None, seed: int, out: Path) -> No
             mean = float(values.mean()) if len(values) else 0.0
             summaries[group][strategy] = (mean, low, high)
             table_rows.append({"scope": group, "name": strategy, "value": mean, "low": low, "high": high, "count": len(users), "verdict": None})
-        baseline_name = max(STRATEGIES[:-1], key=lambda s: summaries[group][s][0])
-        paired = np.asarray([by_user[u]["learned"] - by_user[u][baseline_name] for u in users])
+        baseline_name = max(BASELINES, key=lambda s: summaries[group][s][0])
+        paired = np.asarray([by_user[u][NEURAL_STRATEGY] - by_user[u][baseline_name] for u in users])
         low, high = bootstrap_interval(paired, rng)
         delta = float(paired.mean()) if len(paired) else 0.0
         deltas[group] = (delta, low, high)
         verdict = "wins" if low > 0 else "loses" if high < 0 else "unclear"
-        table_rows.append({"scope": group, "name": f"learned − {baseline_name}", "value": delta, "low": low, "high": high, "count": len(users), "verdict": verdict})
+        table_rows.append({"scope": group, "name": f"for_you − {baseline_name}", "value": delta, "low": low, "high": high, "count": len(users), "verdict": verdict})
 
     fingerprint = hashlib.sha256(db_path.read_bytes()).hexdigest()
     try:

@@ -53,36 +53,26 @@ this milestone intentionally indexes the small seeded corpus at startup.
 
 ## `GET /feed`
 
-Builds a personalized ranking from existing SQLite posts and likes. The
-recommendation logic mirrors the Week 4 notebook: freshness decays with a
-three-year half-life, affinity is the share of the user's historical likes in
-the post's topic, and popularity is the post's share of all likes in the last
-365 days. The default score is the sum of those three signals. The top results
-are selected with a bounded heap and ties resolve by ascending post ID.
+Returns up to `limit` (1–50, default 10) posts for a positive `user_id`.
+Already-liked and future posts are excluded, ties resolve by ascending post ID,
+and unknown users return 404. Four strategies are available:
 
-Parameters: required `user_id` (positive integer), `limit` (1–50, default 10),
-and non-negative `freshness`, `affinity`, `popularity` weights (each default 1;
-at least one must be positive). Users' already-liked posts and future posts are
-excluded. The response contains the weights and ranked posts, each with its
-combined `score` and individual `signals`. Unknown users return 404. Run
-`python scripts/seed_db.py` to create the demo users, topical posts, and likes.
+- `strategy=learned` (default weights 1, 1, 1) ranks with a three-signal
+  linear score: freshness + affinity + recent popularity. Optional non-negative
+  `freshness`, `affinity`, and `popularity` query weights tune this scorer; at
+  least one must be positive. Results include the three signals and score.
+- `strategy=for_you` uses the Week 5 one-hidden-layer NumPy neural model over
+  all six signals (freshness, affinity, popularity, activity, lifetime, age)
+  and returns predicted like probability plus the six signals.
+- `strategy=popularity` orders by the product's last-365-day popularity signal.
+- `strategy=chronological` orders newest eligible posts first.
 
-Add `strategy=learned` to rank with the Week 5 NumPy model instead of the
-weighted Week 4 formula. The model is loaded from the project-root
-`like_model.npz` once at startup. Learned results include a predicted like
-probability in `score` and the six notebook signals in `signals`; if the model
-file is missing, this strategy returns 503. The learned scorer computes scores
-for all candidate posts in one NumPy batch. MovieLens posts use the archive's
-latest rating timestamp as their feature reference time, preserving the
-historical one-year popularity window and 25-year age cap; live posts use the
-current request time.
-
-`strategy=for_you` scores the shared Week 5 `freshness`, `affinity`, and
-`popularity` signals with the Week 4 weights (all `1` by default). It returns
-those three signal values with each post. `strategy=weighted` keeps the legacy
-Week 4 scorer available. Use `strategy=chronological` to rank eligible posts
-newest first. Popularity is an offline evaluation baseline only and is not
-exposed by `GET /feed`.
+The model is loaded from the project-root `like_model.npz` once at startup.
+`for_you` and `learned` use the exact signal builder and constants from that
+artifact; MovieLens posts use the archive's latest rating time as their feature
+reference time, while live posts use the current request time. If the model
+file is missing, those two strategies return 503. Run `python scripts/seed_db.py`
+to create the demo users, topical posts, and likes.
 
 ## Social resources
 

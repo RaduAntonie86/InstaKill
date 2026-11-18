@@ -117,7 +117,7 @@
           <div class="composefoot"><span><span id="charCount">0</span>/500</span><button class="bluebutton" type="submit">Post</button></div>
         </form>
       </div>
-      <div class="pagehead"><h2 id="pageTitle">Your Home Timeline</h2><div class="controls" id="feedControls"><label for="strategy" style="margin:0">Ranking</label><select id="strategy" title="Feed ranking"><option value="weighted">Week 4 · Weighted</option><option value="learned">Week 5 · Learned</option></select><button class="smallbtn" id="refreshButton">Refresh</button></div></div>
+      <div class="pagehead"><h2 id="pageTitle">Your Home Timeline</h2><div class="controls" id="feedControls"><label for="strategy" style="margin:0">Ranking</label><select id="strategy" title="Feed ranking"><option value="learned">Learned · 3 signals</option><option value="for_you">For you · Neural 6</option><option value="popularity">Popularity</option><option value="chronological">Chronological</option></select><button class="smallbtn" id="refreshButton">Refresh</button></div></div>
       <div class="feedmeta" id="feedMeta">Posts from your little corner of the internet.</div>
       <div id="notice" class="hidden"></div>
       <div id="content"><div class="loading">Loading timeline…</div></div>
@@ -158,7 +158,7 @@
       const name = state.users.find(u => u.id === post.user_id)?.username || `user ${post.user_id}`;
       const liked = state.liked.has(post.id);
       const score = post.score == null ? '' : `<span title="Recommendation score">★ ${Number(post.score).toFixed(3)}</span>`;
-      const signals = post.signals ? `<details style="margin-top:5px;color:#999;font-size:11px"><summary>Six signals</summary>${Object.entries(post.signals).map(([k,v]) => `${escapeHtml(k)} ${Number(v).toFixed(3)}`).join(' · ')}</details>` : '';
+      const signals = post.signals ? `<details style="margin-top:5px;color:#999;font-size:11px"><summary>${Object.keys(post.signals).length} signals</summary>${Object.entries(post.signals).map(([k,v]) => `${escapeHtml(k)} ${Number(v).toFixed(3)}`).join(' · ')}</details>` : '';
       return `<article class="post" data-post="${post.id}"><div class="postavatar">${escapeHtml(initials(name))}</div><div class="postbody"><div><span class="posttitle">${escapeHtml(name)}</span><span class="posthandle">@${escapeHtml(name)}</span><span class="posttime">${escapeHtml(post.created_at || '')}</span></div><div class="posttext">${escapeHtml(post.content)}</div><div class="postactions">${score}<button class="${liked?'liked':''}" data-action="like" data-id="${post.id}">${liked?'♥ Liked':'♡ Like'}</button><button data-action="edit" data-id="${post.id}">✎ Edit</button><button class="danger" data-action="delete-post" data-id="${post.id}">Delete</button></div>${signals}</div></article>`;
     }
     function renderPosts(posts, emptyText) {
@@ -192,8 +192,9 @@
       try {
         const strategy = $('#strategy').value;
         const data = await api(`/feed?user_id=${state.userId}&limit=30&strategy=${strategy}`);
-        renderPosts(data.results, data.results.length ? `Ranked with ${strategy === 'learned' ? 'the Week 5 learned model' : 'the Week 4 weighted formula'}.` : 'No posts to show yet.');
-        $('#feedMeta').textContent = strategy === 'learned' ? 'Your timeline, ranked by predicted like probability.' : 'Your timeline, ranked by freshness, affinity, and popularity.';
+        const rankingLabel = ({learned:'the three-signal learned scorer',for_you:'the Week 5 six-signal neural model',popularity:'the popularity baseline',chronological:'chronological order'})[strategy];
+        renderPosts(data.results, data.results.length ? `Ranked with ${rankingLabel}.` : 'No posts to show yet.');
+        $('#feedMeta').textContent = ({learned:'Three signals: freshness, affinity, and popularity.',for_you:'Six Week 5 signals feed a neural model to estimate like probability.',popularity:'Posts ranked by recent popularity.',chronological:'Newest eligible posts first.'})[strategy];
       } catch (error) { $('#content').innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`; }
     }
     async function loadPosts() {

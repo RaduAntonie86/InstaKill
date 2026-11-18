@@ -6,7 +6,7 @@ import numpy as np
 
 from scripts import evaluate
 from app.application.feed import rank_feed
-from app.domain.learned_feed import build_features, load_model
+from app.domain.learned_feed import build_features, load_model, predict
 
 
 def test_ndcg_hand_made_rankings():
@@ -16,7 +16,7 @@ def test_ndcg_hand_made_rankings():
     assert np.isclose(evaluate.ndcg_at_10([8, 9, 7, 2], {2}), expected)
 
 
-def test_for_you_uses_shared_three_signal_features():
+def _ranking_fixture():
     model = load_model(evaluate.ROOT / "like_model.npz")
     now = evaluate.epoch("2020-01-10T00:00:00+00:00")
     posts = [
@@ -25,15 +25,31 @@ def test_for_you_uses_shared_three_signal_features():
         {"post_id": 3, "user_id": 2, "content": "two", "topic": "Action", "created_at": now - evaluate.DAY},
     ]
     history = [{"user_id": 1, "post_id": 1, "created_at": now - 5 * evaluate.DAY}]
-    features, liked = build_features(1, posts, history, now, model)
+    return model, now, posts, history
+
+
+def test_learned_uses_three_signals():
+    model, now, posts, history = _ranking_fixture()
+    features, _ = build_features(1, posts, history, now, model)
     expected_scores = features[:, :3].sum(axis=1)
-    result = rank_feed(1, posts, history, now, 10, "for_you", model)
-    assert [item["post_id"] for item in result] == [2, 3]
-    assert all(not liked[[post["post_id"] for post in posts].index(item["post_id"])] for item in result)
+    result = rank_feed(1, posts, history, now, 10, "learned", model)
+    expected_ids = sorted((2, 3), key=lambda post_id: (-expected_scores[post_id - 1], post_id))
+    assert [item["post_id"] for item in result] == expected_ids
     for item in result:
-        index = item["post_id"] - 1
-        assert np.isclose(item["score"], expected_scores[index])
+        assert np.isclose(item["score"], expected_scores[item["post_id"] - 1])
         assert set(item["signals"]) == {"freshness", "affinity", "popularity"}
+
+
+def test_for_you_uses_six_signal_neural_model():
+    model, now, posts, history = _ranking_fixture()
+    features, _ = build_features(1, posts, history, now, model)
+    expected_scores = predict(model, features)
+    result = rank_feed(1, posts, history, now, 10, "for_you", model)
+    expected_ids = sorted((2, 3), key=lambda post_id: (-expected_scores[post_id - 1], post_id))
+    assert [item["post_id"] for item in result] == expected_ids
+    for item in result:
+        assert np.isclose(item["score"], expected_scores[item["post_id"] - 1])
+        assert set(item["signals"]) == {"freshness", "affinity", "popularity", "activity", "lifetime", "age"}
 
 
 def fixture_db(path: Path):

@@ -216,7 +216,7 @@ def search(
 def feed(
     user_id: int = Query(..., ge=1),
     limit: int = Query(10, ge=1, le=50),
-    strategy: str = Query("weighted", pattern="^(weighted|for_you|chronological|learned)$"),
+    strategy: str = Query("for_you", pattern="^(learned|for_you|popularity|chronological)$"),
     freshness: float = Query(1.0, ge=0),
     affinity: float = Query(1.0, ge=0),
     popularity: float = Query(1.0, ge=0),
@@ -231,23 +231,22 @@ def feed(
     if strategy == "chronological":
         results = rank_feed(user_id, posts, history, now, limit, "chronological")
         return {"user_id": user_id, "strategy": strategy, "results": results}
+    if strategy == "popularity":
+        results = rank_feed(user_id, posts, history, now, limit, "popularity")
+        return {"user_id": user_id, "strategy": strategy, "results": results}
     if strategy == "for_you":
         model = getattr(app.state, "like_model", None)
         if model is None:
             raise HTTPException(status_code=503, detail="for_you feed signal constants are unavailable")
-        weights = {"freshness": freshness, "affinity": affinity, "popularity": popularity}
-        if not any(weights.values()):
-            raise HTTPException(status_code=422, detail="at least one ranking weight must be positive")
-        results = rank_feed(user_id, posts, history, now, limit, "for_you", model, weights)
-        return {"user_id": user_id, "strategy": strategy, "weights": weights, "results": results}
+        results = rank_feed(user_id, posts, history, now, limit, "for_you", model)
+        return {"user_id": user_id, "strategy": strategy, "results": results}
     if strategy == "learned":
         model = getattr(app.state, "like_model", None)
         if model is None:
             raise HTTPException(status_code=503, detail="learned feed model is unavailable")
-        results = rank_feed(user_id, posts, history, now, limit, "learned", model)
-        return {"user_id": user_id, "strategy": strategy, "results": results}
-    weights = {"freshness": freshness, "affinity": affinity, "popularity": popularity}
-    if not any(weights.values()):
-        raise HTTPException(status_code=422, detail="at least one ranking weight must be positive")
-    results = rank_feed(user_id, posts, history, now, limit, "weighted", weights=weights)
-    return {"user_id": user_id, "strategy": strategy, "weights": weights, "results": results}
+        weights = {"freshness": freshness, "affinity": affinity, "popularity": popularity}
+        if not any(weights.values()):
+            raise HTTPException(status_code=422, detail="at least one ranking weight must be positive")
+        results = rank_feed(user_id, posts, history, now, limit, "learned", model, weights)
+        return {"user_id": user_id, "strategy": strategy, "weights": weights, "results": results}
+    raise HTTPException(status_code=422, detail="unsupported feed strategy")

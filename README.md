@@ -41,13 +41,13 @@ pytest
 
 ## Personalized feed (Week 4)
 
-`GET /feed?user_id=1` ranks posts using freshness, topic affinity from the
-user's past likes, and recent post popularity. It excludes posts the user has
-already liked and posts created in the future. Defaults match the notebook
-weights `(1, 1, 1)`; tune them with `freshness`, `affinity`, and `popularity`
-query parameters, for example `/feed?user_id=1&freshness=2&affinity=2&popularity=3`.
-Results include each signal and the combined score. The sample database contains
-five users, topical posts, and likes; regenerate it with `python scripts/seed_db.py`.
+`GET /feed?user_id=1` offers four ranking methods: `learned` (three-signal
+linear scorer), `for_you` (Week 5 six-signal neural model), `popularity`, and
+`chronological`. It excludes already-liked and future posts. The three-signal
+scorer accepts `freshness`, `affinity`, and `popularity` weights, for example
+`/feed?user_id=1&strategy=learned&freshness=2&affinity=2&popularity=3`.
+The sample database contains five users, topical posts, and likes; regenerate
+it with `python scripts/seed_db.py`.
 
 ## Offline feed evaluation (Week 7)
 
