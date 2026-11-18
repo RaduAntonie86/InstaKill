@@ -97,7 +97,8 @@ def _draw_dashboard(rows: list[dict], slices: list[str], summaries: dict, deltas
     highs = [summaries["overall"][s][2] - means[i] for i, s in enumerate(STRATEGIES)]
     ax.bar(STRATEGIES, means, color=[STRATEGY_COLORS[s] for s in STRATEGIES])
     ax.errorbar(range(4), means, yerr=[lows, highs], fmt="none", ecolor="#222", capsize=4)
-    ax.set(title="Which strategy has the highest mean NDCG@10?", ylabel="Mean NDCG@10", ylim=(0, 1))
+    top = max((summaries["overall"][s][2] for s in STRATEGIES), default=0.0)
+    ax.set(title="Which strategy has the highest mean NDCG@10?", ylabel="Mean NDCG@10", ylim=(0, max(0.05, top * 1.12)))
     ax.set_xlabel("Feed strategy")
     fig.tight_layout(); figures.append(fig)
 
@@ -119,7 +120,9 @@ def _draw_dashboard(rows: list[dict], slices: list[str], summaries: dict, deltas
         bounds = [summaries[g][strategy][1:] if g in summaries and strategy in summaries[g] else (0, 0) for g in groups]
         err = [[ys[i] - bounds[i][0] for i in range(len(groups))], [bounds[i][1] - ys[i] for i in range(len(groups))]]
         ax.errorbar(x + (j - 1.5) * width, ys, yerr=err, fmt="none", ecolor="#222", capsize=2, linewidth=0.8)
-    ax.set_xticks(x, groups); ax.set_ylim(0, 1); ax.set(title="How does mean NDCG@10 vary by activity?", ylabel="Mean NDCG@10", xlabel="Likes before cutoff"); ax.legend()
+    slice_top = max((summaries[g][strategy][2] for g in groups for strategy in STRATEGIES
+                     if g in summaries and strategy in summaries[g]), default=0.0)
+    ax.set_xticks(x, groups); ax.set_ylim(0, max(0.05, slice_top * 1.12)); ax.set(title="How does mean NDCG@10 vary by activity?", ylabel="Mean NDCG@10", xlabel="Likes before cutoff"); ax.legend()
     fig.tight_layout(); figures.append(fig)
 
     encoded = []
